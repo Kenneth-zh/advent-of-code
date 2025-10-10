@@ -117,7 +117,7 @@ fn compact_whole_files(segments: &mut Vec<Block>) {
 
         let file_size = segments[file_index].size;
 
-        for i in 0..file_index {
+        for i in 0..segments.len() {
             let old_free_size = segments[i].size;
             if segments[i].id.is_none() && segments[i].size >= file_size {
                 segments[i] = Block {

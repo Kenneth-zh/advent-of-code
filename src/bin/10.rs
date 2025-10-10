@@ -1,115 +1,144 @@
 advent_of_code::solution!(10);
+
 use std::collections::HashSet;
 
 pub fn part_one(input: &str) -> Option<u64> {
-    let grid: Vec<Vec<u64>> = input
-        .lines()
-        .map(|line| {
-            line.chars()
-                .map(|c| c.to_digit(10).unwrap() as u64)
-                .collect()
-        })
-        .collect();
+    let grid = parse_grid(input);
+    let trailheads = find_trailheads(&grid);
 
-    let mut sum = 0u64;
-    let rows = grid.len();
-    let cols = grid[0].len();
+    let total_score: u64 = trailheads
+        .iter()
+        .map(|&pos| calculate_score(&grid, pos))
+        .sum();
 
-    for i in 0..rows {
-        for j in 0..cols {
-            if grid[i][j] == 0 {
-                sum += find_unique_peaks(i, j, &grid);
-            }
-        }
-    }
-    Some(sum)
-}
-
-fn find_unique_peaks(row: usize, col: usize, grid: &Vec<Vec<u64>>) -> u64 {
-    let mut visited_peaks = HashSet::new();
-    dfs_unique_peaks(row, col, grid, &mut visited_peaks);
-    visited_peaks.len() as u64
-}
-
-fn dfs_unique_peaks(
-    row: usize,
-    col: usize,
-    grid: &Vec<Vec<u64>>,
-    peaks: &mut HashSet<(usize, usize)>,
-) {
-    let current_height = grid[row][col];
-
-    // 基础情况：到达山峰（高度 9）
-    if current_height == 9 {
-        peaks.insert((row, col)); // 记录这个山峰的位置
-        return;
-    }
-
-    // 递归情况：探索四个方向
-    let directions = [(0, 1), (0, -1), (1, 0), (-1, 0)];
-
-    for (dr, dc) in directions {
-        let new_row = row as i32 + dr;
-        let new_col = col as i32 + dc;
-
-        // 边界检查
-        if new_row >= 0
-            && new_row < grid.len() as i32
-            && new_col >= 0
-            && new_col < grid[0].len() as i32
-        {
-            let new_row = new_row as usize;
-            let new_col = new_col as usize;
-
-            // 高度必须恰好增加 1
-            if grid[new_row][new_col] == current_height + 1 {
-                dfs_unique_peaks(new_row, new_col, grid, peaks);
-            }
-        }
-    }
-}
-
-fn find_route(row: usize, col: usize, grid: &Vec<Vec<u64>>) -> u64 {
-    let mut count = 0u64;
-    dfs(row, col, grid, &mut count);
-    count
-}
-
-fn dfs(row: usize, col: usize, grid: &Vec<Vec<u64>>, count: &mut u64) {
-    let current_height = grid[row][col];
-
-    // 基础情况：到达山峰（高度 9）
-    if current_height == 9 {
-        *count += 1;
-        return;
-    }
-
-    // 递归情况：探索四个方向
-    let directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]; // 右、左、下、上
-
-    for (dr, dc) in directions {
-        let new_row = row as i32 + dr;
-        let new_col = col as i32 + dc;
-
-        // 边界检查
-        if new_row >= 0
-            && new_row < grid.len() as i32
-            && new_col >= 0
-            && new_col < grid[0].len() as i32
-        {
-            let new_row = new_row as usize;
-            let new_col = new_col as usize;
-
-            // 高度必须恰好增加 1
-            if grid[new_row][new_col] == current_height + 1 {
-                dfs(new_row, new_col, grid, count);
-            }
-        }
-    }
+    Some(total_score)
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
-    None
+    let grid = parse_grid(input);
+    let trailheads = find_trailheads(&grid);
+
+    let total_rating: u64 = trailheads
+        .iter()
+        .map(|&pos| calculate_rating(&grid, pos))
+        .sum();
+
+    Some(total_rating)
+}
+
+fn parse_grid(input: &str) -> Vec<Vec<u32>> {
+    input
+        .lines()
+        .map(|line| {
+            line.chars()
+                .map(|c| c.to_digit(10).unwrap_or(u32::MAX))
+                .collect()
+        })
+        .collect()
+}
+
+fn find_trailheads(grid: &[Vec<u32>]) -> Vec<(usize, usize)> {
+    let mut trailheads = Vec::new();
+
+    for (row, line) in grid.iter().enumerate() {
+        for (col, &height) in line.iter().enumerate() {
+            if height == 0 {
+                trailheads.push((row, col));
+            }
+        }
+    }
+
+    trailheads
+}
+
+// Part 1: 计算能到达多少个不同的终点
+fn calculate_score(grid: &[Vec<u32>], start: (usize, usize)) -> u64 {
+    let mut reachable_nines = HashSet::new();
+    dfs_unique_endpoints(grid, start.0, start.1, 0, &mut reachable_nines);
+    reachable_nines.len() as u64
+}
+
+// Part 2: 计算有多少条不同的路径
+fn calculate_rating(grid: &[Vec<u32>], start: (usize, usize)) -> u64 {
+    dfs_count_paths(grid, start.0, start.1, 0)
+}
+
+fn dfs_unique_endpoints(
+    grid: &[Vec<u32>],
+    row: usize,
+    col: usize,
+    expected_height: u32,
+    reachable_nines: &mut HashSet<(usize, usize)>,
+) {
+    // 边界检查
+    if row >= grid.len() || col >= grid[0].len() {
+        return;
+    }
+
+    // 高度检查
+    if grid[row][col] != expected_height {
+        return;
+    }
+
+    // 到达终点
+    if expected_height == 9 {
+        reachable_nines.insert((row, col));
+        return;
+    }
+
+    // 探索四个方向
+    let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
+    for (dr, dc) in directions {
+        let new_row = row as i32 + dr;
+        let new_col = col as i32 + dc;
+
+        if new_row >= 0 && new_col >= 0 {
+            dfs_unique_endpoints(
+                grid,
+                new_row as usize,
+                new_col as usize,
+                expected_height + 1,
+                reachable_nines,
+            );
+        }
+    }
+}
+
+fn dfs_count_paths(grid: &[Vec<u32>], row: usize, col: usize, expected_height: u32) -> u64 {
+    // 边界检查
+    if row >= grid.len() || col >= grid[0].len() {
+        return 0;
+    }
+
+    // 高度检查
+    if grid[row][col] != expected_height {
+        return 0;
+    }
+
+    // 到达终点
+    if expected_height == 9 {
+        return 1;
+    }
+
+    // 计算从四个方向来的路径总数
+    let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
+    let mut total_paths = 0;
+
+    for (dr, dc) in directions {
+        let new_row = row as i32 + dr;
+        let new_col = col as i32 + dc;
+
+        if new_row >= 0 && new_col >= 0 {
+            total_paths += dfs_count_paths(
+                grid,
+                new_row as usize,
+                new_col as usize,
+                expected_height + 1,
+            );
+        }
+    }
+
+    total_paths
 }
 
 #[cfg(test)]
