@@ -90,15 +90,13 @@ pub fn part_two(input: &str) -> Option<u64> {
 
                 while is_in_bounds(antinode1, rows as i32, cols as i32) {
                     anti_nodes.insert(antinode1);
-                    if let (a, b) = antinode1 {
-                        antinode1 = (a - dr, b - dc);
-                    }
+                    let (a, b) = antinode1;
+                    antinode1 = (a - dr, b - dc);
                 }
                 while is_in_bounds(antinode2, rows as i32, cols as i32) {
                     anti_nodes.insert(antinode2);
-                    if let (a, b) = antinode2 {
-                        antinode2 = (a + dr, b + dc);
-                    }
+                    let (a, b) = antinode2;
+                    antinode2 = (a + dr, b + dc);
                 }
             }
         }

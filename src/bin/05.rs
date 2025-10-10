@@ -1,7 +1,7 @@
 advent_of_code::solution!(5);
 
 use core::num;
-use std::{collections::HashMap, io::Lines};
+use std::collections::HashMap;
 
 pub fn part_one(input: &str) -> Option<u64> {
     let mut rules: HashMap<u64, Vec<u64>> = HashMap::new();
