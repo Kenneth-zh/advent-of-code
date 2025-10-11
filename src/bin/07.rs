@@ -121,6 +121,7 @@ fn count_digits(mut n: u64) -> u32 {
     count
 }
 
+
 #[cfg(test)]
 mod tests {
     use super::*;

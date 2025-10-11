@@ -69,9 +69,9 @@ pub fn part_two(input: &str) -> Option<u64> {
 
     let mut anti_nodes: HashSet<(i32, i32)> = HashSet::new();
 
-    for (_freq, positions) in nodes {
+    for (_freq, positions) in &nodes {
         if positions.len() >= 2 {
-            for &pos in &positions {
+            for &pos in positions {
                 anti_nodes.insert(pos);
             }
         }
