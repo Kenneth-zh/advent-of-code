@@ -41,7 +41,6 @@ fn calculate_region(
         visited.insert((row, col));
         area += 1;
 
-        // 检查四个方向
         let directions = [(0i32, 1i32), (1, 0), (0, -1), (-1, 0)];
         for (dr, dc) in directions {
             let new_row = row as i32 + dr;
@@ -72,7 +71,112 @@ fn calculate_region(
 }
 
 pub fn part_two(input: &str) -> Option<u64> {
-    None
+    let grid: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
+    let rows = grid.len();
+    let cols = grid[0].len();
+
+    let mut visited: HashSet<(usize, usize)> = HashSet::new();
+    let mut total_price = 0u64;
+
+    for i in 0..rows {
+        for j in 0..cols {
+            if !visited.contains(&(i, j)) {
+                let (area, perimeter) = calculate_region2(&grid, i, j, &mut visited);
+                total_price += area * perimeter;
+            }
+        }
+    }
+
+    Some(total_price)
+}
+
+fn calculate_region2(
+    grid: &[Vec<char>],
+    start_row: usize,
+    start_col: usize,
+    visited: &mut HashSet<(usize, usize)>,
+) -> (u64, u64) {
+    let plant_type = grid[start_row][start_col];
+    let mut region = HashSet::new();
+    let mut stack = vec![(start_row, start_col)];
+
+    while let Some((row, col)) = stack.pop() {
+        if visited.contains(&(row, col)) {
+            continue;
+        }
+
+        visited.insert((row, col));
+        region.insert((row, col));
+
+        let directions = [(0i32, 1i32), (1, 0), (0, -1), (-1, 0)];
+        for (dr, dc) in directions {
+            let new_row = row as i32 + dr;
+            let new_col = col as i32 + dc;
+
+            if new_row >= 0
+                && new_row < grid.len() as i32
+                && new_col >= 0
+                && new_col < grid[0].len() as i32
+            {
+                let new_row = new_row as usize;
+                let new_col = new_col as usize;
+
+                if grid[new_row][new_col] == plant_type && !visited.contains(&(new_row, new_col)) {
+                    stack.push((new_row, new_col));
+                }
+            }
+        }
+    }
+
+    let area = region.len() as u64;
+    let sides = count_corners(&region);
+
+    (area, sides)
+}
+
+fn count_corners(region: &HashSet<(usize, usize)>) -> u64 {
+    let mut corners = 0u64;
+
+    for &(row, col) in region {
+        corners += count_corners_at_position(region, row, col);
+    }
+
+    corners
+}
+
+fn count_corners_at_position(region: &HashSet<(usize, usize)>, row: usize, col: usize) -> u64 {
+    let mut corners = 0u64;
+
+    let corner_checks = [
+        ((-1, -1), (-1, 0), (0, -1)),
+        ((-1, 1), (-1, 0), (0, 1)),
+        ((1, -1), (1, 0), (0, -1)),
+        ((1, 1), (1, 0), (0, 1)),
+    ];
+
+    for (diag, vert, horiz) in corner_checks {
+        let diag_pos = (row as i32 + diag.0, col as i32 + diag.1);
+        let vert_pos = (row as i32 + vert.0, col as i32 + vert.1);
+        let horiz_pos = (row as i32 + horiz.0, col as i32 + horiz.1);
+
+        let diag_in = diag_pos.0 >= 0
+            && diag_pos.1 >= 0
+            && region.contains(&(diag_pos.0 as usize, diag_pos.1 as usize));
+        let vert_in = vert_pos.0 >= 0
+            && vert_pos.1 >= 0
+            && region.contains(&(vert_pos.0 as usize, vert_pos.1 as usize));
+        let horiz_in = horiz_pos.0 >= 0
+            && horiz_pos.1 >= 0
+            && region.contains(&(horiz_pos.0 as usize, horiz_pos.1 as usize));
+
+        if !vert_in && !horiz_in {
+            corners += 1;
+        } else if vert_in && horiz_in && !diag_in {
+            corners += 1;
+        }
+    }
+
+    corners
 }
 
 #[cfg(test)]
